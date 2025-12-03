@@ -1,0 +1,22 @@
+# Защита корневой директории
+# Этот файл должен находиться в корне проекта (НЕ в public/)
+
+# Запрет доступа к важным файлам
+<FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Запрет доступа к конфигурационным файлам
+<FilesMatch "\.(md|json|lock|yml|yaml)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Защита директорий
+RedirectMatch 403 /\.git
+RedirectMatch 403 /storage
+RedirectMatch 403 /bootstrap
+RedirectMatch 403 /database
+RedirectMatch 403 /vendor
+RedirectMatch 403 /node_modules

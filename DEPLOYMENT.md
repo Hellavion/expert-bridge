@@ -1,4 +1,4 @@
-# Инструкция по деплою на Beget хостинг
+# Инструкция по деплою на Beget хостинг (FTP)
 
 ## Информация о проекте
 
@@ -17,141 +17,119 @@
 
 ---
 
-## Подготовка проекта к деплою
+## ⚠️ Важно: Деплой через FTP (без SSH)
 
-### 1. Инициализация Git репозитория
-
-```bash
-# Инициализируем репозиторий
-git init
-
-# Добавляем remote
-git remote add origin https://github.com/Hellavion/expert-bridge.git
-
-# Создаем ветку develop
-git checkout -b develop
-
-# Добавляем все файлы
-git add .
-
-# Первый коммит
-git commit -m "Initial commit: Expert Bridge project"
-
-# Пушим develop
-git push -u origin develop
-```
-
-### 2. Сборка фронтенда для продакшена
-
-```bash
-# Собираем production build
-npm run build
-
-# Проверяем что появилась папка public/build
-ls -la public/build
-```
-
-### 3. Создание ветки main для продакшена
-
-```bash
-# Создаем ветку main
-git checkout -b main
-
-# Пушим main
-git push -u origin main
-```
+Так как на бесплатном тарифе Beget нет доступа по SSH, используется **веб-установщик** `install.php` для настройки проекта через браузер.
 
 ---
 
 ## Деплой на Beget хостинг
 
-### Шаг 1: Подключение по SSH
+### Шаг 1: Скачать проект с GitHub
 
-```bash
-ssh username@expert-bridge.ru
-```
+1. Перейдите на https://github.com/Hellavion/expert-bridge
+2. Выберите ветку **`main`**
+3. Нажмите **Code → Download ZIP**
+4. Распакуйте архив на вашем компьютере
 
-### Шаг 2: Клонирование репозитория
+### Шаг 2: Подключиться к хостингу по FTP
 
-```bash
-# Переходим в директорию сайта
-cd ~/expert-bridge.ru
+Используйте FTP-клиент (например, FileZilla):
 
-# Клонируем main ветку
-git clone -b main https://github.com/Hellavion/expert-bridge.git .
-```
+- **Host**: ftp.expert-bridge.ru (или IP от Beget)
+- **Username**: ваш FTP логин от Beget
+- **Password**: ваш FTP пароль от Beget
+- **Port**: 21
 
-### Шаг 3: Настройка окружения
+### Шаг 3: Загрузить файлы на хостинг
 
-```bash
-# Копируем production конфиг
-cp .env.production.example .env
+1. **Откройте директорию вашего сайта** на хостинге (обычно `expert-bridge.ru/public_html` или просто `expert-bridge.ru`)
 
-# Генерируем APP_KEY
-php artisan key:generate
+2. **Удалите все стандартные файлы** Beget из этой папки (index.html и т.д.)
 
-# Редактируем .env если нужно
-nano .env
-```
+3. **Загрузите ВСЕ файлы** из распакованного архива в корень директории сайта:
+   ```
+   expert-bridge.ru/
+   ├── app/
+   ├── bootstrap/
+   ├── config/
+   ├── database/
+   ├── public/
+   ├── resources/
+   ├── routes/
+   ├── storage/
+   ├── vendor/
+   ├── .env.production.example
+   ├── .htaccess
+   ├── artisan
+   ├── composer.json
+   └── ...
+   ```
 
-### Шаг 4: Установка зависимостей
+⚠️ **ВАЖНО**: Загружайте файлы в корень, НЕ создавайте дополнительную папку!
 
-```bash
-# Устанавливаем composer зависимости (production only)
-composer install --no-dev --optimize-autoloader
+### Шаг 4: Настроить корневую директорию в панели Beget
 
-# Права доступа
-chmod -R 755 storage bootstrap/cache
-```
+1. Зайдите в **Панель управления Beget**
+2. Откройте раздел **Сайты → Управление сайтами**
+3. Найдите домен `expert-bridge.ru`
+4. В поле **"Корневая директория"** укажите: `public`
+   - Было: `/expert-bridge.ru/public_html`
+   - Стало: `/expert-bridge.ru/public_html/public` (или просто `/public` относительно корня)
+5. Сохраните изменения
 
-### Шаг 5: Миграция базы данных
+### Шаг 5: Установить права доступа (CHMOD)
 
-```bash
-# Запускаем миграции
-php artisan migrate --force
+Через FTP-клиент установите права на папки:
 
-# Опционально: заполняем начальными данными
-php artisan db:seed
-```
+- **storage/** → 755 (рекурсивно, включая все подпапки)
+- **bootstrap/cache/** → 755
 
-### Шаг 6: Оптимизация для продакшена
+В FileZilla: ПКМ на папке → File Permissions → установить 755
 
-```bash
-# Кешируем конфигурацию
-php artisan config:cache
+### Шаг 6: Запустить веб-установщик
 
-# Кешируем роуты
-php artisan route:cache
+1. Откройте в браузере: **https://expert-bridge.ru/install.php**
 
-# Кешируем представления
-php artisan view:cache
+2. **Следуйте шагам установщика**:
 
-# Оптимизируем автозагрузку
-php artisan optimize
-```
+   **Шаг 1**: Проверка окружения (должны быть все ✓ зеленые)
 
-### Шаг 7: Настройка веб-сервера на Beget
+   **Шаг 2**: Создание файла `.env`
+   - Отредактируйте конфигурацию (особенно `APP_URL` и `DB_*`)
+   - Нажмите "Создать .env файл"
 
-1. В панели Beget перейдите в **Сайты** → **Управление сайтами**
-2. Выберите домен `expert-bridge.ru`
-3. Установите **Корневую директорию**: `~/expert-bridge.ru/public`
-4. Включите **PHP 8.2+**
-5. Настройте `.htaccess` (должен быть автоматически):
+   **Шаг 3**: Генерация APP_KEY
+   - Нажмите "Генерировать APP_KEY"
 
-```apache
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>
-```
+   **Шаг 4**: Миграции базы данных
+   - Убедитесь что данные БД правильные
+   - Нажмите "Запустить миграции"
+
+   **Шаг 5**: Создание администратора
+   - Заполните форму (email и пароль)
+   - Нажмите "Создать администратора"
+
+   **Шаг 6**: Оптимизация
+   - Нажмите "Оптимизировать для production"
+
+3. **ОБЯЗАТЕЛЬНО удалите файл `install.php`** после завершения установки!
+   - Через FTP удалите `public/install.php`
+
+### Шаг 7: Проверка работоспособности
+
+Откройте сайт и проверьте:
+
+1. ✅ Главная страница: https://expert-bridge.ru
+2. ✅ Форма регистрации клиентов работает
+3. ✅ Админка: https://expert-bridge.ru/login
+4. ✅ Вход с созданными credentials
 
 ---
 
 ## Обновление проекта (будущие деплои)
 
-### На локальной машине
+### На локальной машине (разработка):
 
 ```bash
 # Работаем в develop
@@ -171,95 +149,107 @@ git merge develop
 git push origin main
 ```
 
-### На хостинге
+### На хостинге (через FTP):
 
-```bash
-# Подключаемся по SSH
-ssh username@expert-bridge.ru
+1. Скачайте обновленный проект с GitHub (ветка `main`)
+2. Через FTP загрузите **измененные файлы**:
+   - `app/` - если изменения в контроллерах/моделях
+   - `public/build/` - если пересобран фронтенд
+   - `database/migrations/` - если есть новые миграции
+   - `routes/` - если изменились маршруты
 
-# Переходим в директорию
-cd ~/expert-bridge.ru
+3. **Если были новые миграции**, временно создайте файл `public/migrate.php`:
 
-# Получаем обновления
-git pull origin main
+```php
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
 
-# Устанавливаем новые зависимости (если были изменения)
-composer install --no-dev --optimize-autoloader
+Artisan::call('migrate', ['--force' => true]);
+echo "Migrations completed!\n";
+echo Artisan::output();
 
-# Запускаем миграции (если есть новые)
-php artisan migrate --force
-
-# Очищаем и пересоздаем кеш
-php artisan config:clear
-php artisan config:cache
-php artisan route:clear
-php artisan route:cache
-php artisan view:clear
-php artisan view:cache
-php artisan optimize
+// УДАЛИТЕ ЭТОТ ФАЙЛ ПОСЛЕ ВЫПОЛНЕНИЯ!
 ```
 
----
+   Откройте `https://expert-bridge.ru/migrate.php`, затем **удалите файл**!
 
-## Важные замечания
+4. **Очистите кеш**, создайте временно `public/clear-cache.php`:
 
-1. **Никогда не работайте напрямую с main веткой** - используйте develop для разработки
-2. **Файл .env** не попадает в git (в .gitignore), настраивайте его вручную на хостинге
-3. **База данных** - используйте только MySQL на хостинге (SQLite только для локальной разработки)
-4. **Фронтенд** - всегда собирайте перед мержем в main (`npm run build`)
-5. **Права доступа** - storage и bootstrap/cache должны быть доступны для записи
-6. **APP_DEBUG=false** - обязательно в production для безопасности
-7. **Индексация** - сайт защищен от поисковых роботов (robots.txt + meta tags)
+```php
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
 
----
+Artisan::call('config:clear');
+Artisan::call('route:clear');
+Artisan::call('view:clear');
+Artisan::call('cache:clear');
 
-## Проверка работоспособности
+Artisan::call('config:cache');
+Artisan::call('route:cache');
+Artisan::call('view:cache');
+Artisan::call('optimize');
 
-После деплоя проверьте:
+echo "Cache cleared and optimized!\n";
 
-1. ✅ Главная страница открывается: `https://expert-bridge.ru`
-2. ✅ Форма регистрации клиентов работает
-3. ✅ Админка доступна: `https://expert-bridge.ru/admin/dashboard`
-4. ✅ Логин через Laravel Fortify работает
-5. ✅ База данных подключена (данные сохраняются)
-
----
-
-## Создание первого администратора
-
-```bash
-# Через SSH на хостинге
-php artisan tinker
-
-# В tinker выполните:
-$user = new App\Models\User();
-$user->name = 'Admin';
-$user->email = 'admin@expert-bridge.ru';
-$user->password = bcrypt('your-secure-password');
-$user->email_verified_at = now();
-$user->save();
+// УДАЛИТЕ ЭТОТ ФАЙЛ ПОСЛЕ ВЫПОЛНЕНИЯ!
 ```
+
+   Откройте `https://expert-bridge.ru/clear-cache.php`, затем **удалите файл**!
+
+---
+
+## Безопасность
+
+### Важные файлы, которые НЕЛЬЗЯ открывать публично:
+
+- `.env` - защищен через `.htaccess`
+- `storage/` - защищен через `.htaccess`
+- `vendor/` - защищен через `.htaccess`
+- `install.php` - **УДАЛИТЕ после установки!**
+- `migrate.php` - **удаляйте после использования!**
+- `clear-cache.php` - **удаляйте после использования!**
+
+### Файл `.htaccess` в корне проекта:
+
+Убедитесь что загружен `.htaccess` файл в **корень проекта** (не в public/), который защищает важные директории.
 
 ---
 
 ## Troubleshooting
 
 ### Ошибка 500
-- Проверьте `storage/logs/laravel.log`
-- Убедитесь что `storage/` имеет права 755
+
+1. Проверьте права доступа: `storage/` и `bootstrap/cache/` должны быть 755
+2. Проверьте что `.env` файл создан и `APP_KEY` сгенерирован
+3. Проверьте логи в `storage/logs/laravel.log` (скачайте через FTP)
 
 ### База данных не подключается
-- Проверьте учетные данные в `.env`
-- Убедитесь что база создана в панели Beget
+
+1. Проверьте credentials в `.env`:
+   ```
+   DB_HOST=localhost
+   DB_DATABASE=rfb7925n_bridge
+   DB_USERNAME=rfb7925n_bridge
+   DB_PASSWORD=@Avi197350
+   ```
+2. Убедитесь что база создана в панели Beget
 
 ### Страницы не загружаются
-- Проверьте что корневая директория указывает на `public/`
-- Проверьте `.htaccess` в `public/`
+
+1. Проверьте что корневая директория указывает на `public/`
+2. Проверьте наличие `public/.htaccess` с правилами rewrite
 
 ### Стили не применяются
-- Убедитесь что `npm run build` был выполнен
-- Проверьте наличие `public/build/manifest.json`
-- Очистите кеш: `php artisan view:clear`
+
+1. Убедитесь что папка `public/build/` загружена полностью
+2. Проверьте наличие `public/build/manifest.json`
+3. Очистите кеш через `clear-cache.php`
 
 ---
 
@@ -267,3 +257,4 @@ $user->save();
 
 - Хостинг: support@beget.com
 - GitHub: https://github.com/Hellavion/expert-bridge
+- Домен: https://expert-bridge.ru
